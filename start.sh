@@ -1,5 +1,13 @@
 #!/bin/bash
 DIR="$(cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+L="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
+if [ -n "$L" ]; then
+	case "$L" in
+		/*) BASE="/$(dirname "$L")" ;;
+		*)  BASE="/$(dirname "${BASH_SOURCE[0]}")/$(dirname "$L")" ;;
+	esac
+	DIR="$(cd -P "$BASE" && pwd)"
+fi
 cd "$DIR"
 
 DO_LOOP="no"
@@ -25,7 +33,7 @@ if [ "$PHP_BINARY" == "" ]; then
 	if [ -f ./bin/php7/bin/php ]; then
 		export PHPRC=""
 		PHP_BINARY="./bin/php7/bin/php"
-	elif [ type php 2>/dev/null ]; then
+	elif type php > /dev/null 2>&1; then
 		PHP_BINARY=$(type -p php)
 	else
 		echo "Couldn't find a working PHP 7 binary, please use the installer."
@@ -49,9 +57,9 @@ LOOPS=0
 set +e
 while [ "$LOOPS" -eq 0 ] || [ "$DO_LOOP" == "yes" ]; do
 	if [ "$DO_LOOP" == "yes" ]; then
-		"$PHP_BINARY" "$POCKETMINE_FILE" $@
+		"$PHP_BINARY" -d memory_limit=512M "$POCKETMINE_FILE" $@
 	else
-		exec "$PHP_BINARY" "$POCKETMINE_FILE" $@
+		exec "$PHP_BINARY" -d memory_limit=512M "$POCKETMINE_FILE" $@
 	fi
 	((LOOPS++))
 done

@@ -31,7 +31,15 @@ class CommandReader extends Thread{
 
 	public function __construct(){
 		$this->buffer = new \Threaded;
-		$this->start();
+		$opts = getopt("", ["disable-readline"]);
+		if(extension_loaded("readline") and !isset($opts["disable-readline"]) and !isset($GLOBALS["pocketmine_pthreads_shim"])){
+			$this->readline = true;
+		}else{
+			global $stdin;
+			$stdin = fopen("php://stdin", "r");
+			stream_set_blocking($stdin, 0);
+			$this->readline = false;
+		}
 	}
 
 	public function shutdown(){
@@ -70,28 +78,13 @@ class CommandReader extends Thread{
 		return null;
 	}
 
-	public function run(){
-		$opts = getopt("", ["disable-readline"]);
-		if(extension_loaded("readline") and !isset($opts["disable-readline"])){
-			$this->readline = true;
-		}else{
-			global $stdin;
-			$stdin = fopen("php://stdin", "r");
-			stream_set_blocking($stdin, 0);
-			$this->readline = false;
+	public function tick(){
+		if($this->shutdown === true){
+			return;
 		}
 
-		$lastLine = microtime(true);
-		while(!$this->shutdown){
-			if(($line = $this->readLine()) !== ""){
-				$this->buffer[] = preg_replace("#\\x1b\\x5b([^\\x1b]*\\x7e|[\\x40-\\x50])#", "", $line);
-			}elseif(!$this->shutdown and (microtime(true) - $lastLine) <= 0.1){ //Non blocking! Sleep to save CPU
-				$this->synchronized(function(){
-					$this->wait(10000);
-				});
-			}
-
-			$lastLine = microtime(true);
+		if(($line = $this->readLine()) !== ""){
+			$this->buffer[] = preg_replace("#\\x1b\\x5b([^\\x1b]*\\x7e|[\\x40-\\x50])#", "", $line);
 		}
 	}
 

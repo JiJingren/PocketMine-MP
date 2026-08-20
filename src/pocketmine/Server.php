@@ -2112,7 +2112,7 @@ class Server{
 				if($p instanceof Plugin and !($p->getPluginLoader() instanceof PharPluginLoader)){
 					$report = false;
 				}
-			}elseif(\Phar::running(true) == ""){
+			}elseif(!class_exists('\Phar', false) or \Phar::running(true) == ""){
 				$report = false;
 			}
 			if($dump->getData()["error"]["type"] === "E_PARSE" or $dump->getData()["error"]["type"] === "E_COMPILE_ERROR"){
@@ -2392,6 +2392,7 @@ class Server{
 
 		++$this->tickCounter;
 
+		$this->console->tick();
 		$this->checkConsole();
 
 		Timings::$connectionTimer->startTiming();

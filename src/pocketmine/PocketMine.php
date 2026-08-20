@@ -85,7 +85,7 @@ namespace pocketmine {
 	 * Enjoy it as much as I did writing it. I don't want to do it again.
 	 */
 
-	if(\Phar::running(true) !== ""){
+	if(class_exists('\Phar', false) and \Phar::running(true) !== ""){
 		@define('pocketmine\PATH', \Phar::running(true) . "/");
 	}else{
 		@define('pocketmine\PATH', \getcwd() . DIRECTORY_SEPARATOR);
@@ -98,6 +98,12 @@ namespace pocketmine {
 	}
 
 	if(!extension_loaded("pthreads")){
+		if(!class_exists("Threaded", false)){
+			require_once(\pocketmine\PATH . "src/spl/pthreads_shim.php");
+		}
+	}
+
+	if(!class_exists("Threaded", false)){
 		echo "[CRITICAL] Unable to find the pthreads extension." . PHP_EOL;
 		echo "[CRITICAL] Please use the installer provided on the homepage." . PHP_EOL;
 		exit(1);
@@ -392,13 +398,17 @@ namespace pocketmine {
 		++$errors;
 	}
 
-	$pthreads_version = phpversion("pthreads");
-	if(substr_count($pthreads_version, ".") < 2){
-		$pthreads_version = "0.$pthreads_version";
-	}
-	if(version_compare($pthreads_version, "3.1.5") < 0){
-		$logger->critical("pthreads >= 3.1.5 is required, while you have $pthreads_version.");
-		++$errors;
+	if(!extension_loaded("pthreads") and class_exists("Threaded", false)){
+		$logger->notice("Using pure-PHP pthreads shim (single-process mode).");
+	}else{
+		$pthreads_version = phpversion("pthreads");
+		if(substr_count($pthreads_version, ".") < 2){
+			$pthreads_version = "0.$pthreads_version";
+		}
+		if(version_compare($pthreads_version, "3.1.5") < 0){
+			$logger->critical("pthreads >= 3.1.5 is required, while you have $pthreads_version.");
+			++$errors;
+		}
 	}
 
 	if(!extension_loaded("uopz")){
@@ -456,7 +466,7 @@ namespace pocketmine {
 		new Installer();
 	}
 
-	if(\Phar::running(true) === ""){
+	if(!class_exists('\Phar', false) or \Phar::running(true) === ""){
 		$logger->warning("Non-packaged PocketMine-MP installation detected, do not use on production.");
 	}
 

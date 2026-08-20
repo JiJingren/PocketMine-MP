@@ -49,7 +49,11 @@ class MainLogger extends \AttachableThreadedLogger{
 		$this->logFile = $logFile;
 		$this->logDebug = (bool) $logDebug;
 		$this->logStream = new \Threaded;
-		$this->start();
+		$this->shutdown = false;
+		$this->logResource = fopen($logFile, "a+b");
+		if(!is_resource($this->logResource)){
+			throw new \RuntimeException("Couldn't open log file");
+		}
 	}
 
 	/**
@@ -175,6 +179,10 @@ class MainLogger extends \AttachableThreadedLogger{
 
 	public function shutdown(){
 		$this->shutdown = true;
+		if(is_resource($this->logResource)){
+			@fclose($this->logResource);
+			$this->logResource = null;
+		}
 	}
 
 	protected function send($message, $level, $prefix, $color){
@@ -203,38 +211,8 @@ class MainLogger extends \AttachableThreadedLogger{
 		}
 
 		$this->logStream[] = date("Y-m-d", $now) . " " . $cleanMessage . "\n";
-		if($this->logStream->count() === 1){
-			$this->synchronized(function(){
-				$this->notify();
-			});
+		if(is_resource($this->logResource)){
+			@fwrite($this->logResource, $this->logStream->pop());
 		}
-	}
-
-	public function run(){
-		$this->shutdown = false;
-		$this->logResource = fopen($this->logFile, "a+b");
-		if(!is_resource($this->logResource)){
-			throw new \RuntimeException("Couldn't open log file");
-		}
-
-		while($this->shutdown === false){
-			$this->synchronized(function(){
-				while($this->logStream->count() > 0){
-					$chunk = $this->logStream->shift();
-					fwrite($this->logResource, $chunk);
-				}
-
-				$this->wait(25000);
-			});
-		}
-
-		if($this->logStream->count() > 0){
-			while($this->logStream->count() > 0){
-				$chunk = $this->logStream->shift();
-				fwrite($this->logResource, $chunk);
-			}
-		}
-
-		fclose($this->logResource);
 	}
 }

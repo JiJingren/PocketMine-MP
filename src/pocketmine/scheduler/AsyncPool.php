@@ -41,6 +41,9 @@ class AsyncPool{
 	/** @var int[] */
 	private $workerUsage = [];
 
+	/** @var AsyncTask[] */
+	private $pendingTasks = [];
+
 	public function __construct(Server $server, $size){
 		$this->server = $server;
 		$this->size = (int) $size;
@@ -85,6 +88,7 @@ class AsyncPool{
 		$this->workers[$worker]->stack($task);
 		$this->workerUsage[$worker]++;
 		$this->taskWorkers[$task->getTaskId()] = $worker;
+		$this->pendingTasks[] = $task;
 	}
 
 	public function submitTask(AsyncTask $task){
@@ -119,16 +123,13 @@ class AsyncPool{
 	}
 
 	public function removeTasks(){
-		do{
-			foreach($this->tasks as $task){
-				$task->cancelRun();
-				$this->removeTask($task);
-			}
+		foreach($this->tasks as $task){
+			$task->cancelRun();
+			$task->setGarbage();
+			$this->removeTask($task, true);
+		}
 
-			if(count($this->tasks) > 0){
-				Server::microSleep(25000);
-			}
-		}while(count($this->tasks) > 0);
+		$this->pendingTasks = [];
 
 		for($i = 0; $i < $this->size; ++$i){
 			$this->workerUsage[$i] = 0;
@@ -138,8 +139,26 @@ class AsyncPool{
 		$this->tasks = [];
 	}
 
+	public function runPendingTasks(){
+		for($i = 0; $i < 2 and count($this->pendingTasks) > 0; ++$i){
+			$task = array_shift($this->pendingTasks);
+			if($task->isGarbage() or $task->hasCancelledRun()){
+				$task->setGarbage();
+				continue;
+			}
+			$task->worker = $this->workers[$this->taskWorkers[$task->getTaskId()]];
+			try{
+				$task->run();
+			}catch(\Throwable $e){
+				$this->server->getLogger()->logException($e);
+			}
+		}
+	}
+
 	public function collectTasks(){
 		Timings::$schedulerAsyncTimer->startTiming();
+
+		$this->runPendingTasks();
 
 		foreach($this->tasks as $task){
 			if($task->isGarbage() and !$task->isRunning() and !$task->isCrashed()){

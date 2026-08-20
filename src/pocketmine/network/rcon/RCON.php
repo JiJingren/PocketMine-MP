@@ -79,6 +79,7 @@ class RCON{
 
 	public function check(){
 		for($n = 0; $n < $this->threads; ++$n){
+			$this->workers[$n]->tick();
 			if($this->workers[$n]->isTerminated() === true){
 				$this->workers[$n] = new RCONInstance($this->socket, $this->password, $this->clientsPerThread);
 			}elseif($this->workers[$n]->isWaiting()){
