@@ -2,6 +2,26 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/JiJingren/PocketMine-MP)](https://github.com/JiJingren/PocketMine-MP)
 [![GitHub stars](https://img.shields.io/github/stars/JiJingren/PocketMine-MP)](https://github.com/JiJingren/PocketMine-MP)
 
+## iOS Modifications
+
+This fork is adapted and patched by **JiJingren** for iOS devices
+(PHP 7.4.33, NTS build without the pthreads extension).
+
+### What was changed
+
+- Added a compatibility layer for pthreads, so the server can run on non-ZTS PHP builds without the pthreads extension
+- Reworked `CommandReader`, `MainLogger`, `ServerKiller`, `RCON`, `SessionManager`, `RakLibServer` and `AsyncPool` for single-process operation
+- Fixed PHP 7.4 syntax issues (curly-brace string offsets)
+- Added `Phar` class guards for PHP builds without the phar extension
+- Fixed `Level` chunk unload queue initialization warning
+- Fixed `start.sh` PHP detection bug and symlink invocation (`/usr/bin/mcserver`)
+
+### Usage
+
+- Start the server: `mcserver`, or `cd /var/root/PocketMine-MP && ./start.sh`
+- Send console commands via FIFO: `echo "list" > /tmp/pm-console`
+
+
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU Lesser General Public License as published by
