@@ -1,5 +1,6 @@
-# ![PocketMine-MP](http://cdn.pocketmine.net/img/PocketMine-MP-h.png)
-[![Build Status](https://travis-ci.org/PocketMine/PocketMine-MP.svg?branch=master)](https://travis-ci.org/PocketMine/PocketMine-MP)
+# PocketMine-MP
+[![GitHub last commit](https://img.shields.io/github/last-commit/JiJingren/PocketMine-MP)](https://github.com/JiJingren/PocketMine-MP)
+[![GitHub stars](https://img.shields.io/github/stars/JiJingren/PocketMine-MP)](https://github.com/JiJingren/PocketMine-MP)
 
 
 	This program is free software: you can redistribute it and/or modify
